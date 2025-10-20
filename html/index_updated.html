@@ -49,6 +49,7 @@
             gap: 15px;
             margin-bottom: 30px;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .btn {
@@ -89,6 +90,30 @@
             background: #e53e3e;
         }
 
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: #e2e8f0;
+            color: #4a5568;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active,
+        .filter-btn:hover {
+            background: #4299e1;
+            color: white;
+        }
+
         .services-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
@@ -103,6 +128,7 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             border: 1px solid #e2e8f0;
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .service-card:hover {
@@ -110,11 +136,26 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
+        .service-card.hidden {
+            display: none;
+        }
+
         .service-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 15px;
+        }
+
+        .service-name-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .service-icon {
+            font-size: 1.5rem;
         }
 
         .service-name {
@@ -144,6 +185,19 @@
         .status-stopped {
             background: #fed7d7;
             color: #742a2a;
+        }
+
+        .service-category {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #edf2f7;
+            color: #4a5568;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
         .service-info {
@@ -226,7 +280,8 @@
         }
 
         .form-group input,
-        .form-group textarea {
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 12px;
             border: 1px solid #e2e8f0;
@@ -236,7 +291,8 @@
         }
 
         .form-group input:focus,
-        .form-group textarea:focus {
+        .form-group textarea:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #4299e1;
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
@@ -274,6 +330,10 @@
             background: #f56565;
         }
 
+        .toast-warning {
+            background: #ed8936;
+        }
+
         .loading {
             display: inline-block;
             width: 20px;
@@ -300,6 +360,33 @@
             color: #2b6cb0;
         }
 
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4299e1;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #4a5568;
+            font-size: 0.9rem;
+        }
+
         @media (max-width: 768px) {
             .services-grid {
                 grid-template-columns: 1fr;
@@ -307,10 +394,15 @@
             
             .controls {
                 flex-direction: column;
+                align-items: stretch;
             }
             
             .service-actions {
                 flex-direction: column;
+            }
+
+            .filter-buttons {
+                justify-content: center;
             }
         }
     </style>
@@ -320,6 +412,10 @@
         <div class="header">
             <h1>🚀 Enhanced Caddy Admin Interface</h1>
             <p>Manage your services with integrated DNS and Caddy configuration</p>
+        </div>
+
+        <div class="stats" id="statsContainer">
+            <!-- Stats will be populated by JavaScript -->
         </div>
 
         <div class="controls">
@@ -335,6 +431,16 @@
             <a href="/logout" class="btn btn-danger">
                 🚪 Logout
             </a>
+            
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-category="all">All</button>
+                <button class="filter-btn" data-category="Dashboard">Dashboard</button>
+                <button class="filter-btn" data-category="Management">Management</button>
+                <button class="filter-btn" data-category="Media">Media</button>
+                <button class="filter-btn" data-category="Productivity">Productivity</button>
+                <button class="filter-btn" data-category="Finance">Finance</button>
+                <button class="filter-btn" data-category="Security">Security</button>
+            </div>
         </div>
 
         <div id="servicesGrid" class="services-grid">
@@ -365,6 +471,20 @@
                     <label for="description">Description</label>
                     <textarea id="description" name="description" rows="3" placeholder="Service description"></textarea>
                 </div>
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category">
+                        <option value="Custom">Custom</option>
+                        <option value="Dashboard">Dashboard</option>
+                        <option value="Management">Management</option>
+                        <option value="Media">Media</option>
+                        <option value="Productivity">Productivity</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Security">Security</option>
+                        <option value="Development">Development</option>
+                        <option value="Automation">Automation</option>
+                    </select>
+                </div>
                 <div class="form-actions">
                     <button type="button" class="btn" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn btn-success" id="saveBtn">
@@ -382,10 +502,12 @@
     <script>
         let services = [];
         let editingServiceId = null;
+        let currentFilter = 'all';
 
         // Load services on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadServices();
+            setupFilterButtons();
             
             // Auto-update domain preview
             document.getElementById('subdomain').addEventListener('input', function() {
@@ -394,11 +516,60 @@
             });
         });
 
+        function setupFilterButtons() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    currentFilter = this.dataset.category;
+                    filterServices();
+                });
+            });
+        }
+
+        function filterServices() {
+            const cards = document.querySelectorAll('.service-card');
+            cards.forEach(card => {
+                const category = card.dataset.category;
+                if (currentFilter === 'all' || category === currentFilter) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        function updateStats() {
+            const total = services.length;
+            const running = services.filter(s => s.status === 'running').length;
+            const categories = [...new Set(services.map(s => s.category))].length;
+            
+            const statsContainer = document.getElementById('statsContainer');
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${total}</div>
+                    <div class="stat-label">Total Services</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${running}</div>
+                    <div class="stat-label">Running Services</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${categories}</div>
+                    <div class="stat-label">Categories</div>
+                </div>
+            `;
+        }
+
         async function loadServices() {
             try {
                 const response = await fetch('/api/services');
                 services = await response.json();
                 renderServices();
+                updateStats();
             } catch (error) {
                 showToast('Error loading services: ' + error.message, 'error');
             }
@@ -412,17 +583,24 @@
                 const serviceCard = createServiceCard(service);
                 grid.appendChild(serviceCard);
             });
+            
+            filterServices();
         }
 
         function createServiceCard(service) {
             const card = document.createElement('div');
             card.className = 'service-card';
+            card.dataset.category = service.category || 'Custom';
             
             card.innerHTML = `
+                <div class="service-category">${service.category || 'Custom'}</div>
                 <div class="service-header">
-                    <a href="https://${service.name}" target="_blank" class="service-name">
-                        ${service.name}
-                    </a>
+                    <div class="service-name-container">
+                        <span class="service-icon">${service.icon || '🔧'}</span>
+                        <a href="https://${service.name}" target="_blank" class="service-name">
+                            ${service.name}
+                        </a>
+                    </div>
                     <span class="service-status status-${service.status}">
                         ${service.status}
                     </span>
@@ -467,6 +645,7 @@
             document.getElementById('subdomain').value = service.subdomain;
             document.getElementById('port').value = service.port;
             document.getElementById('description').value = service.description;
+            document.getElementById('category').value = service.category || 'Custom';
             document.getElementById('previewDomain').textContent = `${service.subdomain}.biswas.me`;
             document.getElementById('serviceModal').style.display = 'block';
         }
@@ -492,7 +671,8 @@
             const serviceData = {
                 subdomain: formData.get('subdomain'),
                 port: formData.get('port'),
-                description: formData.get('description')
+                description: formData.get('description'),
+                category: formData.get('category')
             };
 
             try {
@@ -598,9 +778,9 @@
                 configWindow.document.write(`
                     <html>
                         <head><title>Caddy Configuration</title></head>
-                        <body style="font-family: monospace; padding: 20px;">
+                        <body style="font-family: monospace; padding: 20px; background: #f5f5f5;">
                             <h2>Current Caddy Configuration</h2>
-                            <pre>${JSON.stringify(config, null, 2)}</pre>
+                            <pre style="background: white; padding: 20px; border-radius: 8px; overflow: auto;">${JSON.stringify(config, null, 2)}</pre>
                         </body>
                     </html>
                 `);
@@ -616,7 +796,7 @@
             
             setTimeout(() => {
                 toast.classList.remove('show');
-            }, 3000);
+            }, 4000);
         }
 
         // Close modal when clicking outside
