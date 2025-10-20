@@ -1,0 +1,14 @@
+services:
+  caddy-admin-ui:
+    build: .
+    container_name: caddy-admin-ui
+    restart: unless-stopped
+    network_mode: host
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+      - dockge.name=caddy-admin-ui
+      - homepage.group=Administration
+      - homepage.name=Caddy Admin
+      - homepage.icon=caddy.png
+      - homepage.href=https://caddy.biswas.me
+      - homepage.description=Go 1.25 powered Caddy administration interface

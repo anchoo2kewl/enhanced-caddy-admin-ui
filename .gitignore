@@ -1,0 +1,38 @@
+# Environment variables
+.env
+*.env
+
+# Go build artifacts
+caddy-admin
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Backups
+*.backup*
+*.original
+
+# Temporary files
+*.tmp
+*.temp

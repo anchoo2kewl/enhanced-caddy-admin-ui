@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Caddy Admin Interface</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: #3182ce;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+
+        .btn-success {
+            background: #48bb78;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: #f56565;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .service-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2d3748;
+            text-decoration: none;
+        }
+
+        .service-name:hover {
+            color: #4299e1;
+        }
+
+        .service-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-running {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-stopped {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .service-info {
+            margin-bottom: 20px;
+        }
+
+        .service-info p {
+            margin-bottom: 8px;
+            color: #4a5568;
+        }
+
+        .service-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .close {
+            color: #a0aec0;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: #2d3748;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 25px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 2000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-success {
+            background: #48bb78;
+        }
+
+        .toast-error {
+            background: #f56565;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top-color: #4299e1;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .dns-info {
+            background: #ebf8ff;
+            border: 1px solid #bee3f8;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #2b6cb0;
+        }
+
+        @media (max-width: 768px) {
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .service-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Enhanced Caddy Admin Interface</h1>
+            <p>Manage your services with integrated DNS and Caddy configuration</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-success" onclick="openAddServiceModal()">
+                ➕ Add New Service
+            </button>
+            <button class="btn" onclick="refreshServices()">
+                🔄 Refresh Services
+            </button>
+            <button class="btn" onclick="showCaddyConfig()">
+                ⚙️ View Caddy Config
+            </button>
+            <a href="/logout" class="btn btn-danger">
+                🚪 Logout
+            </a>
+        </div>
+
+        <div id="servicesGrid" class="services-grid">
+            <!-- Services will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Add/Edit Service Modal -->
+    <div id="serviceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Add New Service</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <form id="serviceForm">
+                <div class="form-group">
+                    <label for="subdomain">Subdomain *</label>
+                    <input type="text" id="subdomain" name="subdomain" required placeholder="e.g., myapp">
+                    <div class="dns-info">
+                        Will create: <strong id="previewDomain">subdomain.biswas.me</strong> → anshuman.duckdns.com
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="port">Port *</label>
+                    <input type="number" id="port" name="port" required placeholder="e.g., 3000">
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="3" placeholder="Service description"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="saveBtn">
+                        <span id="saveText">Save Service</span>
+                        <div id="saveLoader" class="loading" style="display: none;"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let services = [];
+        let editingServiceId = null;
+
+        // Load services on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadServices();
+            
+            // Auto-update domain preview
+            document.getElementById('subdomain').addEventListener('input', function() {
+                const subdomain = this.value;
+                document.getElementById('previewDomain').textContent = subdomain ? `${subdomain}.biswas.me` : 'subdomain.biswas.me';
+            });
+        });
+
+        async function loadServices() {
+            try {
+                const response = await fetch('/api/services');
+                services = await response.json();
+                renderServices();
+            } catch (error) {
+                showToast('Error loading services: ' + error.message, 'error');
+            }
+        }
+
+        function renderServices() {
+            const grid = document.getElementById('servicesGrid');
+            grid.innerHTML = '';
+
+            services.forEach(service => {
+                const serviceCard = createServiceCard(service);
+                grid.appendChild(serviceCard);
+            });
+        }
+
+        function createServiceCard(service) {
+            const card = document.createElement('div');
+            card.className = 'service-card';
+            
+            card.innerHTML = `
+                <div class="service-header">
+                    <a href="https://${service.name}" target="_blank" class="service-name">
+                        ${service.name}
+                    </a>
+                    <span class="service-status status-${service.status}">
+                        ${service.status}
+                    </span>
+                </div>
+                <div class="service-info">
+                    <p><strong>Port:</strong> ${service.port}</p>
+                    <p><strong>Description:</strong> ${service.description}</p>
+                    <div class="dns-info">
+                        DNS: ${service.subdomain}.biswas.me CNAME → anshuman.duckdns.com
+                    </div>
+                </div>
+                <div class="service-actions">
+                    <button class="btn btn-sm" onclick="editService(${service.id})">
+                        ✏️ Edit
+                    </button>
+                    <button class="btn btn-sm" onclick="testService('${service.name}')">
+                        🔍 Test
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteService(${service.id}, '${service.subdomain}')">
+                        🗑️ Delete
+                    </button>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function openAddServiceModal() {
+            editingServiceId = null;
+            document.getElementById('modalTitle').textContent = 'Add New Service';
+            document.getElementById('serviceForm').reset();
+            document.getElementById('previewDomain').textContent = 'subdomain.biswas.me';
+            document.getElementById('serviceModal').style.display = 'block';
+        }
+
+        function editService(serviceId) {
+            const service = services.find(s => s.id === serviceId);
+            if (!service) return;
+
+            editingServiceId = serviceId;
+            document.getElementById('modalTitle').textContent = 'Edit Service';
+            document.getElementById('subdomain').value = service.subdomain;
+            document.getElementById('port').value = service.port;
+            document.getElementById('description').value = service.description;
+            document.getElementById('previewDomain').textContent = `${service.subdomain}.biswas.me`;
+            document.getElementById('serviceModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('serviceModal').style.display = 'none';
+        }
+
+        // Handle form submission
+        document.getElementById('serviceForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const saveBtn = document.getElementById('saveBtn');
+            const saveText = document.getElementById('saveText');
+            const saveLoader = document.getElementById('saveLoader');
+            
+            // Show loading
+            saveText.style.display = 'none';
+            saveLoader.style.display = 'inline-block';
+            saveBtn.disabled = true;
+
+            const formData = new FormData(this);
+            const serviceData = {
+                subdomain: formData.get('subdomain'),
+                port: formData.get('port'),
+                description: formData.get('description')
+            };
+
+            try {
+                let response;
+                if (editingServiceId) {
+                    response = await fetch(`/api/services/${editingServiceId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(serviceData)
+                    });
+                } else {
+                    response = await fetch('/api/services', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(serviceData)
+                    });
+                }
+
+                if (response.ok) {
+                    closeModal();
+                    loadServices();
+                    showToast(editingServiceId ? 'Service updated successfully!' : 'Service created successfully!', 'success');
+                } else {
+                    const error = await response.text();
+                    showToast('Error: ' + error, 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            } finally {
+                // Hide loading
+                saveText.style.display = 'inline';
+                saveLoader.style.display = 'none';
+                saveBtn.disabled = false;
+            }
+        });
+
+        async function deleteService(serviceId, subdomain) {
+            if (!confirm(`Are you sure you want to delete ${subdomain}.biswas.me? This will also delete the DNS record.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/services/${serviceId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadServices();
+                    showToast('Service deleted successfully!', 'success');
+                } else {
+                    const error = await response.text();
+                    showToast('Error deleting service: ' + error, 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function testService(serviceName) {
+            try {
+                const response = await fetch(`https://${serviceName}`, { method: 'HEAD' });
+                if (response.ok) {
+                    showToast(`✅ ${serviceName} is responding`, 'success');
+                } else {
+                    showToast(`⚠️ ${serviceName} returned status ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showToast(`❌ ${serviceName} is not accessible`, 'error');
+            }
+        }
+
+        function refreshServices() {
+            loadServices();
+            showToast('Services refreshed', 'success');
+        }
+
+        async function showCaddyConfig() {
+            try {
+                const response = await fetch('/caddy-api/config/');
+                const config = await response.json();
+                
+                // Open new window with formatted config
+                const configWindow = window.open('', '_blank');
+                configWindow.document.write(`
+                    <html>
+                        <head><title>Caddy Configuration</title></head>
+                        <body style="font-family: monospace; padding: 20px;">
+                            <h2>Current Caddy Configuration</h2>
+                            <pre>${JSON.stringify(config, null, 2)}</pre>
+                        </body>
+                    </html>
+                `);
+            } catch (error) {
+                showToast('Error fetching Caddy config: ' + error.message, 'error');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast toast-${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('serviceModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
