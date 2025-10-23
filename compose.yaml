@@ -4,6 +4,16 @@ services:
     container_name: caddy-admin-ui
     restart: unless-stopped
     network_mode: host
+    environment:
+      - CADDY_ADMIN_URL=${CADDY_ADMIN_URL:-http://localhost:2019}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - CLOUDFLARE_ZONE_ID=${CLOUDFLARE_ZONE_ID}
+      - CNAME_TARGET=${CNAME_TARGET}
+    env_file:
+      - .env
+    volumes:
+      - /etc/caddy/cloudflare.env:/etc/caddy/cloudflare.env:ro
+      - ./data:/root/data
     labels:
       - com.centurylinklabs.watchtower.enable=true
       - dockge.name=caddy-admin-ui
@@ -11,4 +21,4 @@ services:
       - homepage.name=Caddy Admin
       - homepage.icon=caddy.png
       - homepage.href=https://caddy.biswas.me
-      - homepage.description=Go 1.25 powered Caddy administration interface
+      - homepage.description=Go 1.25 powered Caddy administration interface with user management

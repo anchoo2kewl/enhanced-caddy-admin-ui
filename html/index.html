@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enhanced Caddy Admin Interface</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <style>
         * {
             box-sizing: border-box;
@@ -332,6 +333,18 @@
             <button class="btn" onclick="showCaddyConfig()">
                 ⚙️ View Caddy Config
             </button>
+            <button class="btn" onclick="openAPIKeysModal()">
+                🔑 Manage API Keys
+            </button>
+            <button class="btn" id="manageUsersBtn" onclick="openUsersModal()" style="display: none;">
+                👥 Manage Users
+            </button>
+            <button class="btn" onclick="openChangePasswordModal()">
+                🔐 Change Password
+            </button>
+            <button class="btn" onclick="open2FAModal()">
+                🔒 Manage 2FA
+            </button>
             <a href="/logout" class="btn btn-danger">
                 🚪 Logout
             </a>
@@ -358,12 +371,24 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label for="destination_ip">Destination IP *</label>
+                    <input type="text" id="destination_ip" name="destination_ip" value="localhost" required placeholder="e.g., localhost or 192.168.1.100">
+                    <small style="color: #666;">IP or hostname where the service is running</small>
+                </div>
+                <div class="form-group">
                     <label for="port">Port *</label>
                     <input type="number" id="port" name="port" required placeholder="e.g., 3000">
                 </div>
                 <div class="form-group">
                     <label for="description">Description</label>
                     <textarea id="description" name="description" rows="3" placeholder="Service description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="is_web_service" name="is_web_service" checked>
+                        <span>Web Service (HTTP/HTTPS)</span>
+                    </label>
+                    <small style="color: #666;">Uncheck for protocol services (e.g., RustDesk, game servers) that don't use HTTP</small>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn" onclick="closeModal()">Cancel</button>
@@ -376,23 +401,207 @@
         </div>
     </div>
 
+    <!-- API Keys Modal -->
+    <div id="apiKeysModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">API Key Management</h2>
+                <span class="close" onclick="closeAPIKeysModal()">&times;</span>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <button class="btn btn-success" onclick="generateAPIKey()">
+                    ➕ Generate New API Key
+                </button>
+            </div>
+            <div id="apiKeysList">
+                <!-- API keys will be loaded here -->
+            </div>
+            <div id="newAPIKeyDisplay" style="display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;">
+                <p style="margin-bottom: 10px; font-weight: 600;">⚠️ New API Key Generated - Save it now!</p>
+                <p style="margin-bottom: 10px; font-size: 14px;">This key will only be shown once. Copy it now:</p>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="newAPIKeyValue" readonly style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; background: white;">
+                    <button class="btn btn-sm" onclick="copyAPIKey()">📋 Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Modal -->
+    <div id="usersModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2 class="modal-title">User Management</h2>
+                <span class="close" onclick="closeUsersModal()">&times;</span>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <button class="btn btn-success" onclick="showAddUserForm()">
+                    ➕ Add New User
+                </button>
+            </div>
+            <div id="addUserForm" style="display: none; margin-bottom: 20px; padding: 15px; background: #f7fafc; border-radius: 8px;">
+                <h3 style="margin-bottom: 15px;">Add New User</h3>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="newUsername" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="newUserPassword" placeholder="Enter password (min 8 characters)">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="newUserAdmin"> Administrator
+                    </label>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="createNewUser()">Create User</button>
+                    <button class="btn" onclick="hideAddUserForm()">Cancel</button>
+                </div>
+            </div>
+            <div id="usersList">
+                <!-- Users will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Change Password</h2>
+                <span class="close" onclick="closeChangePasswordModal()">&times;</span>
+            </div>
+            <form id="changePasswordForm" onsubmit="changePassword(event)">
+                <div class="form-group">
+                    <label>Current Password</label>
+                    <input type="password" id="currentPassword" required>
+                </div>
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" id="newPassword" required minlength="8">
+                    <small style="color: #718096;">Minimum 8 characters</small>
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="confirmPassword" required minlength="8">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" onclick="closeChangePasswordModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2FA Management Modal -->
+    <div id="twoFAModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Two-Factor Authentication</h2>
+                <span class="close" onclick="close2FAModal()">&times;</span>
+            </div>
+
+            <!-- 2FA Status Display -->
+            <div id="twoFAStatus" style="margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px; padding: 12px; background: #f7fafc; border-radius: 8px; margin-bottom: 15px;">
+                    <span id="twoFAStatusIcon" style="font-size: 24px;"></span>
+                    <div style="flex: 1;">
+                        <strong id="twoFAStatusText"></strong>
+                        <p id="twoFAStatusDesc" style="margin: 4px 0 0 0; color: #718096; font-size: 14px;"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Setup 2FA Section (shown when 2FA is disabled) -->
+            <div id="setup2FASection" style="display: none;">
+                <div id="qrCodeSection" style="display: none;">
+                    <h3 style="margin-top: 0;">Step 1: Scan QR Code</h3>
+                    <p style="color: #718096;">Scan this QR code with your authenticator app (e.g., Google Authenticator, Authy):</p>
+                    <div style="text-align: center; padding: 20px; background: #f7fafc; border-radius: 8px; margin: 15px 0;">
+                        <img id="qrCodeImage" style="max-width: 200px; height: auto;" />
+                    </div>
+
+                    <h3>Step 2: Or Enter Code Manually</h3>
+                    <p style="color: #718096;">If you can't scan the QR code, enter this code manually in your authenticator app:</p>
+                    <div style="background: #2d3748; color: #fff; padding: 15px; border-radius: 8px; font-family: monospace; word-break: break-all; margin: 10px 0;">
+                        <code id="manualCode" style="font-size: 16px;"></code>
+                    </div>
+                    <button onclick="copyManualCode()" class="btn" style="margin-top: 10px;">📋 Copy Code</button>
+
+                    <h3>Step 3: Verify Code</h3>
+                    <p style="color: #718096;">Enter the 6-digit code from your authenticator app to enable 2FA:</p>
+                    <form id="enable2FAForm" onsubmit="enable2FA(event)">
+                        <div class="form-group">
+                            <input type="text" id="enable2FACode" placeholder="000000" maxlength="6" pattern="[0-9]{6}" required style="text-align: center; font-size: 24px; letter-spacing: 8px; font-family: monospace;">
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn" onclick="close2FAModal()">Cancel</button>
+                            <button type="submit" class="btn btn-success">Enable 2FA</button>
+                        </div>
+                    </form>
+                </div>
+
+                <button id="startSetup2FABtn" onclick="startSetup2FA()" class="btn btn-primary" style="width: 100%;">
+                    🔒 Set Up Two-Factor Authentication
+                </button>
+            </div>
+
+            <!-- Disable 2FA Section (shown when 2FA is enabled) -->
+            <div id="disable2FASection" style="display: none;">
+                <form id="disable2FAForm" onsubmit="disable2FA(event)">
+                    <p style="color: #e53e3e; background: #fed7d7; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+                        ⚠️ Disabling two-factor authentication will make your account less secure.
+                    </p>
+                    <div class="form-group">
+                        <label>Confirm Your Password</label>
+                        <input type="password" id="disable2FAPassword" required>
+                        <small style="color: #718096;">Enter your password to disable 2FA</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn" onclick="close2FAModal()">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Disable 2FA</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast notifications -->
     <div id="toast" class="toast"></div>
 
     <script>
         let services = [];
         let editingServiceId = null;
+        let currentUser = null;
 
-        // Load services on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        // Load services and user info on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadCurrentUser();
             loadServices();
-            
+
             // Auto-update domain preview
             document.getElementById('subdomain').addEventListener('input', function() {
                 const subdomain = this.value;
                 document.getElementById('previewDomain').textContent = subdomain ? `${subdomain}.biswas.me` : 'subdomain.biswas.me';
             });
         });
+
+        // Load current user info
+        async function loadCurrentUser() {
+            try {
+                const response = await fetch('/api/me');
+                if (response.ok) {
+                    currentUser = await response.json();
+                    // Show admin-only features
+                    if (currentUser.is_admin) {
+                        document.getElementById('manageUsersBtn').style.display = 'inline-flex';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
 
         async function loadServices() {
             try {
@@ -417,18 +626,25 @@
         function createServiceCard(service) {
             const card = document.createElement('div');
             card.className = 'service-card';
-            
+
+            const serviceType = service.is_web_service ? '' : '<span style="background: #f59e0b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">Protocol Service</span>';
+            const testButton = service.is_web_service ? `
+                <button class="btn btn-sm" onclick="testService('${service.name}')">
+                    🔍 Test
+                </button>` : '';
+
             card.innerHTML = `
                 <div class="service-header">
                     <a href="https://${service.name}" target="_blank" class="service-name">
                         ${service.name}
                     </a>
+                    ${serviceType}
                     <span class="service-status status-${service.status}">
                         ${service.status}
                     </span>
                 </div>
                 <div class="service-info">
-                    <p><strong>Port:</strong> ${service.port}</p>
+                    <p><strong>Destination:</strong> ${service.destination_ip || 'localhost'}:${service.port}</p>
                     <p><strong>Description:</strong> ${service.description}</p>
                     <div class="dns-info">
                         DNS: ${service.subdomain}.biswas.me CNAME → anshuman.duckdns.com
@@ -438,15 +654,16 @@
                     <button class="btn btn-sm" onclick="editService(${service.id})">
                         ✏️ Edit
                     </button>
-                    <button class="btn btn-sm" onclick="testService('${service.name}')">
-                        🔍 Test
+                    ${testButton}
+                    <button class="btn btn-sm" onclick="syncDNS('${service.subdomain}')">
+                        🌐 Sync DNS
                     </button>
                     <button class="btn btn-danger btn-sm" onclick="deleteService(${service.id}, '${service.subdomain}')">
                         🗑️ Delete
                     </button>
                 </div>
             `;
-            
+
             return card;
         }
 
@@ -454,6 +671,8 @@
             editingServiceId = null;
             document.getElementById('modalTitle').textContent = 'Add New Service';
             document.getElementById('serviceForm').reset();
+            document.getElementById('destination_ip').value = 'localhost';
+            document.getElementById('is_web_service').checked = true;
             document.getElementById('previewDomain').textContent = 'subdomain.biswas.me';
             document.getElementById('serviceModal').style.display = 'block';
         }
@@ -465,8 +684,10 @@
             editingServiceId = serviceId;
             document.getElementById('modalTitle').textContent = 'Edit Service';
             document.getElementById('subdomain').value = service.subdomain;
+            document.getElementById('destination_ip').value = service.destination_ip || 'localhost';
             document.getElementById('port').value = service.port;
             document.getElementById('description').value = service.description;
+            document.getElementById('is_web_service').checked = service.is_web_service !== false;
             document.getElementById('previewDomain').textContent = `${service.subdomain}.biswas.me`;
             document.getElementById('serviceModal').style.display = 'block';
         }
@@ -491,8 +712,10 @@
             const formData = new FormData(this);
             const serviceData = {
                 subdomain: formData.get('subdomain'),
+                destination_ip: formData.get('destination_ip'),
                 port: formData.get('port'),
-                description: formData.get('description')
+                description: formData.get('description'),
+                is_web_service: document.getElementById('is_web_service').checked
             };
 
             try {
@@ -583,6 +806,42 @@
             }
         }
 
+        async function syncDNS(subdomain) {
+            try {
+                showToast(`Syncing DNS for ${subdomain}.biswas.me...`, 'info');
+
+                const response = await fetch('/api/dns', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        subdomain: subdomain
+                    })
+                });
+
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const result = await response.json();
+                    if (response.ok) {
+                        showToast(`✅ DNS record created/updated for ${subdomain}.biswas.me`, 'success');
+                    } else {
+                        showToast(`❌ DNS sync failed: ${result.message || 'Unknown error'}`, 'error');
+                    }
+                } else {
+                    const text = await response.text();
+                    if (response.ok) {
+                        showToast(`✅ DNS record created/updated for ${subdomain}.biswas.me`, 'success');
+                    } else {
+                        showToast(`❌ DNS sync failed: ${text}`, 'error');
+                    }
+                }
+            } catch (error) {
+                showToast(`❌ Failed to sync DNS: ${error.message}`, 'error');
+            }
+        }
+
         function refreshServices() {
             loadServices();
             showToast('Services refreshed', 'success');
@@ -621,9 +880,492 @@
 
         // Close modal when clicking outside
         window.onclick = function(event) {
-            const modal = document.getElementById('serviceModal');
-            if (event.target === modal) {
+            const serviceModal = document.getElementById('serviceModal');
+            const apiKeysModal = document.getElementById('apiKeysModal');
+            if (event.target === serviceModal) {
                 closeModal();
+            }
+            if (event.target === apiKeysModal) {
+                closeAPIKeysModal();
+            }
+        }
+
+        // API Key Management Functions
+        async function openAPIKeysModal() {
+            document.getElementById('apiKeysModal').style.display = 'block';
+            document.getElementById('newAPIKeyDisplay').style.display = 'none';
+            await loadAPIKeys();
+        }
+
+        function closeAPIKeysModal() {
+            document.getElementById('apiKeysModal').style.display = 'none';
+        }
+
+        async function loadAPIKeys() {
+            try {
+                const response = await fetch('/api/keys');
+                const keys = await response.json();
+                renderAPIKeys(keys);
+            } catch (error) {
+                showToast('Error loading API keys: ' + error.message, 'error');
+            }
+        }
+
+        function renderAPIKeys(keys) {
+            const container = document.getElementById('apiKeysList');
+
+            if (!keys || keys.length === 0) {
+                container.innerHTML = '<p style="color: #718096; text-align: center; padding: 20px;">No API keys generated yet. Click "Generate New API Key" to create one.</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f7fafc; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 12px; text-align: left;">ID</th>
+                            <th style="padding: 12px; text-align: left;">API Key</th>
+                            <th style="padding: 12px; text-align: left;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${keys.map((key, index) => `
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 12px;">#${index}</td>
+                                <td style="padding: 12px; font-family: monospace;">${key.key}</td>
+                                <td style="padding: 12px;">
+                                    <button class="btn btn-danger btn-sm" onclick="deleteAPIKey(${index})">
+                                        🗑️ Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function generateAPIKey() {
+            try {
+                const response = await fetch('/api/keys', {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate API key');
+                }
+
+                const result = await response.json();
+
+                // Show the new API key
+                document.getElementById('newAPIKeyValue').value = result.api_key;
+                document.getElementById('newAPIKeyDisplay').style.display = 'block';
+
+                // Reload the keys list
+                await loadAPIKeys();
+
+                showToast('API key generated successfully!', 'success');
+            } catch (error) {
+                showToast('Error generating API key: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteAPIKey(id) {
+            if (!confirm('Are you sure you want to delete this API key? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/keys', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: id })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete API key');
+                }
+
+                await loadAPIKeys();
+                showToast('API key deleted successfully', 'success');
+            } catch (error) {
+                showToast('Error deleting API key: ' + error.message, 'error');
+            }
+        }
+
+        function copyAPIKey() {
+            const input = document.getElementById('newAPIKeyValue');
+            input.select();
+            document.execCommand('copy');
+            showToast('API key copied to clipboard!', 'success');
+        }
+
+        // User Management Functions
+        async function openUsersModal() {
+            document.getElementById('usersModal').style.display = 'block';
+            document.getElementById('addUserForm').style.display = 'none';
+            await loadUsers();
+        }
+
+        function closeUsersModal() {
+            document.getElementById('usersModal').style.display = 'none';
+        }
+
+        function showAddUserForm() {
+            document.getElementById('addUserForm').style.display = 'block';
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newUserPassword').value = '';
+            document.getElementById('newUserAdmin').checked = false;
+        }
+
+        function hideAddUserForm() {
+            document.getElementById('addUserForm').style.display = 'none';
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                if (!response.ok) throw new Error('Failed to load users');
+                const users = await response.json();
+                renderUsers(users);
+            } catch (error) {
+                showToast('Error loading users: ' + error.message, 'error');
+            }
+        }
+
+        function renderUsers(users) {
+            const container = document.getElementById('usersList');
+
+            if (!users || users.length === 0) {
+                container.innerHTML = '<p style="color: #718096; text-align: center; padding: 20px;">No users found.</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f7fafc; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 12px; text-align: left;">Username</th>
+                            <th style="padding: 12px; text-align: left;">Admin</th>
+                            <th style="padding: 12px; text-align: left;">Created</th>
+                            <th style="padding: 12px; text-align: left;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => `
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 12px;">${user.username}</td>
+                                <td style="padding: 12px;">
+                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; ${user.is_admin ? 'background: #c6f6d5; color: #22543d' : 'background: #e2e8f0; color: #4a5568'}">
+                                        ${user.is_admin ? 'Yes' : 'No'}
+                                    </span>
+                                </td>
+                                <td style="padding: 12px;">${new Date(user.created_at).toLocaleDateString()}</td>
+                                <td style="padding: 12px;">
+                                    ${!user.is_admin || users.filter(u => u.is_admin).length > 1 ? `
+                                        <button class="btn btn-sm" onclick="toggleUserAdmin(${user.id}, ${!user.is_admin})">
+                                            ${user.is_admin ? '⬇️ Revoke Admin' : '⬆️ Make Admin'}
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">
+                                            🗑️ Delete
+                                        </button>
+                                    ` : `
+                                        <span style="color: #718096; font-size: 12px;">Last admin</span>
+                                    `}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function createNewUser() {
+            const username = document.getElementById('newUsername').value.trim();
+            const password = document.getElementById('newUserPassword').value;
+            const isAdmin = document.getElementById('newUserAdmin').checked;
+
+            if (!username || !password) {
+                showToast('Username and password are required', 'error');
+                return;
+            }
+
+            if (password.length < 8) {
+                showToast('Password must be at least 8 characters', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                        is_admin: isAdmin
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error);
+                }
+
+                showToast('User created successfully!', 'success');
+                hideAddUserForm();
+                await loadUsers();
+            } catch (error) {
+                showToast('Error creating user: ' + error.message, 'error');
+            }
+        }
+
+        async function toggleUserAdmin(userId, makeAdmin) {
+            try {
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        is_admin: makeAdmin
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to update user');
+
+                showToast(makeAdmin ? 'User promoted to admin' : 'Admin rights revoked', 'success');
+                await loadUsers();
+            } catch (error) {
+                showToast('Error updating user: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error);
+                }
+
+                showToast('User deleted successfully', 'success');
+                await loadUsers();
+            } catch (error) {
+                showToast('Error deleting user: ' + error.message, 'error');
+            }
+        }
+
+        // Password Change Functions
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'block';
+            document.getElementById('changePasswordForm').reset();
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'none';
+        }
+
+        async function changePassword(event) {
+            event.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match', 'error');
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                showToast('Password must be at least 8 characters', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error);
+                }
+
+                showToast('Password changed successfully!', 'success');
+                closeChangePasswordModal();
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // 2FA Management Functions
+        async function open2FAModal() {
+            const modal = document.getElementById('twoFAModal');
+            modal.style.display = 'block';
+
+            // Update status based on current user
+            await loadCurrentUser();
+            update2FAStatus();
+        }
+
+        function close2FAModal() {
+            const modal = document.getElementById('twoFAModal');
+            modal.style.display = 'none';
+
+            // Reset forms
+            document.getElementById('enable2FAForm').reset();
+            document.getElementById('disable2FAForm').reset();
+            document.getElementById('qrCodeSection').style.display = 'none';
+            document.getElementById('startSetup2FABtn').style.display = 'block';
+        }
+
+        function update2FAStatus() {
+            const statusIcon = document.getElementById('twoFAStatusIcon');
+            const statusText = document.getElementById('twoFAStatusText');
+            const statusDesc = document.getElementById('twoFAStatusDesc');
+            const setup2FASection = document.getElementById('setup2FASection');
+            const disable2FASection = document.getElementById('disable2FASection');
+
+            if (currentUser && currentUser.two_fa_enabled) {
+                statusIcon.textContent = '✅';
+                statusText.textContent = '2FA Enabled';
+                statusDesc.textContent = 'Your account is protected with two-factor authentication';
+                setup2FASection.style.display = 'none';
+                disable2FASection.style.display = 'block';
+            } else {
+                statusIcon.textContent = '⚠️';
+                statusText.textContent = '2FA Disabled';
+                statusDesc.textContent = 'Enable 2FA to add an extra layer of security to your account';
+                setup2FASection.style.display = 'block';
+                disable2FASection.style.display = 'none';
+            }
+        }
+
+        async function startSetup2FA() {
+            try {
+                const response = await fetch('/api/2fa/setup', {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to setup 2FA');
+                }
+
+                const data = await response.json();
+
+                // Display QR code
+                document.getElementById('qrCodeImage').src = 'data:image/png;base64,' + data.qr_code;
+                document.getElementById('manualCode').textContent = data.manual_code;
+
+                // Show QR code section, hide start button
+                document.getElementById('qrCodeSection').style.display = 'block';
+                document.getElementById('startSetup2FABtn').style.display = 'none';
+                document.getElementById('enable2FACode').focus();
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        function copyManualCode() {
+            const code = document.getElementById('manualCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('Code copied to clipboard!', 'success');
+            });
+        }
+
+        async function enable2FA(event) {
+            event.preventDefault();
+
+            const code = document.getElementById('enable2FACode').value;
+
+            try {
+                const response = await fetch('/api/2fa/enable', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ code })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Invalid code. Please try again.');
+                }
+
+                showToast('2FA enabled successfully!', 'success');
+                await loadCurrentUser();
+                close2FAModal();
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function disable2FA(event) {
+            event.preventDefault();
+
+            const password = document.getElementById('disable2FAPassword').value;
+
+            try {
+                const response = await fetch('/api/2fa/disable', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Invalid password');
+                }
+
+                showToast('2FA disabled successfully', 'success');
+                await loadCurrentUser();
+                close2FAModal();
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Update modal click handler to include new modals
+        window.onclick = function(event) {
+            const serviceModal = document.getElementById('serviceModal');
+            const apiKeysModal = document.getElementById('apiKeysModal');
+            const usersModal = document.getElementById('usersModal');
+            const changePasswordModal = document.getElementById('changePasswordModal');
+            const twoFAModal = document.getElementById('twoFAModal');
+
+            if (event.target === serviceModal) {
+                closeModal();
+            }
+            if (event.target === apiKeysModal) {
+                closeAPIKeysModal();
+            }
+            if (event.target === usersModal) {
+                closeUsersModal();
+            }
+            if (event.target === changePasswordModal) {
+                closeChangePasswordModal();
+            }
+            if (event.target === twoFAModal) {
+                close2FAModal();
             }
         }
     </script>
