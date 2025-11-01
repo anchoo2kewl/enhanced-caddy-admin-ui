@@ -56,6 +56,12 @@ type DNSRecord struct {
 	TTL     int    `json:"ttl"`
 }
 
+type Config struct {
+	CNAMETarget      string `json:"cname_target"`
+	CloudflareToken  string `json:"cloudflare_token,omitempty"`
+	CloudflareZoneID string `json:"cloudflare_zone_id,omitempty"`
+}
+
 var apiKeys = []string{
 	// API keys will be generated and added here
 	// Format: "your-api-key-here"
@@ -1320,6 +1326,85 @@ func apiKeysHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // User management handlers
+// Configuration management handler
+func configHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		cnameTarget := os.Getenv("CNAME_TARGET")
+		if cnameTarget == "" {
+			cnameTarget = "anshuman.duckdns.org"
+		}
+
+		cfToken := os.Getenv("CLOUDFLARE_API_TOKEN")
+		cfZone := os.Getenv("CLOUDFLARE_ZONE_ID")
+
+		maskedToken := ""
+		if cfToken != "" && len(cfToken) > 8 {
+			maskedToken = cfToken[:4] + "..." + cfToken[len(cfToken)-4:]
+		}
+
+		resp := map[string]interface{}{
+			"cname_target":         cnameTarget,
+			"cloudflare_token":     maskedToken,
+			"cloudflare_token_set": cfToken != "",
+			"cloudflare_zone_id":   cfZone,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+
+	case "PUT":
+		var cfg Config
+		if err := json.NewDecoder(r.Body).Decode(&cfg); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		envFile := ".env"
+		envVars := map[string]string{}
+		if data, err := os.ReadFile(envFile); err == nil {
+			for _, line := range strings.Split(string(data), "\n") {
+				if strings.Contains(line, "=") {
+					parts := strings.SplitN(line, "=", 2)
+					k := strings.TrimSpace(parts[0])
+					v := strings.TrimSpace(parts[1])
+					envVars[k] = v
+				}
+			}
+		}
+
+		if cfg.CNAMETarget != "" {
+			envVars["CNAME_TARGET"] = cfg.CNAMETarget
+			os.Setenv("CNAME_TARGET", cfg.CNAMETarget)
+		}
+		if cfg.CloudflareToken != "" {
+			envVars["CLOUDFLARE_API_TOKEN"] = cfg.CloudflareToken
+			os.Setenv("CLOUDFLARE_API_TOKEN", cfg.CloudflareToken)
+		}
+		if cfg.CloudflareZoneID != "" {
+			envVars["CLOUDFLARE_ZONE_ID"] = cfg.CloudflareZoneID
+			os.Setenv("CLOUDFLARE_ZONE_ID", cfg.CloudflareZoneID)
+		}
+
+		lines := make([]string, 0, len(envVars))
+		for k, v := range envVars {
+			lines = append(lines, fmt.Sprintf("%s=%s", k, v))
+		}
+		if err := os.WriteFile(envFile, []byte(strings.Join(lines, "\n")+"\n"), 0600); err != nil {
+			http.Error(w, fmt.Sprintf("Failed to update config: %v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "success",
+			"message": "Configuration updated successfully",
+		})
+
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+
 func usersHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
@@ -1750,6 +1835,7 @@ func main() {
 
 	// API keys management
 	http.HandleFunc("/api/keys", requireAuth(apiKeysHandler))
+	http.HandleFunc("/api/config", requireAuth(configHandler))
 
 	// User management (admin only)
 	http.HandleFunc("/api/users", requireAuth(requireAdmin(usersHandler)))
