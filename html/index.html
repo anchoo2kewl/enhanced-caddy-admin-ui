@@ -339,7 +339,7 @@
             <button class="btn" id="manageUsersBtn" onclick="openUsersModal()" style="display: none;">
                 👥 Manage Users
             </button>
-            <button class="admin-btn" onclick="showConfigModal()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <button class="admin-btn" onclick="showConfigModal()" >
                 ⚙️ Settings
             </button>
             <button class="btn" onclick="openChangePasswordModal()">
@@ -370,7 +370,7 @@
                     <label for="subdomain">Subdomain *</label>
                     <input type="text" id="subdomain" name="subdomain" required placeholder="e.g., myapp">
                     <div class="dns-info">
-                        Will create: <strong id="previewDomain">subdomain.biswas.me</strong> → anshuman.duckdns.com
+                        Will create: <strong id="previewDomain">subdomain.biswas.me</strong> → anshuman.duckdns.org
                     </div>
                 </div>
                 <div class="form-group">
@@ -685,7 +685,7 @@
                     <p><strong>Destination:</strong> ${service.destination_ip || 'localhost'}:${service.port}</p>
                     <p><strong>Description:</strong> ${service.description}</p>
                     <div class="dns-info">
-                        DNS: ${service.subdomain}.biswas.me CNAME → anshuman.duckdns.com
+                        DNS: ${service.subdomain}.biswas.me CNAME → anshuman.duckdns.org
                     </div>
                 </div>
                 <div class="service-actions">
