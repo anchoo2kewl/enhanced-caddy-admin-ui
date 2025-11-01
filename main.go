@@ -59,6 +59,7 @@ type DNSRecord struct {
 var apiKeys = []string{
 	// API keys will be generated and added here
 	// Format: "your-api-key-here"
+        "cak_nmxOSfxme05NcQqsWph5JuxsRXrsSef2",
 }
 
 var services = []Service{
@@ -75,6 +76,7 @@ var services = []Service{
 	// Media & Entertainment
 	{ID: 8, Name: "jellyfin.biswas.me", Subdomain: "jellyfin", Port: "8096", DestinationIP: "localhost", Description: "Media Server", Status: "running", Icon: "🎬", Category: "Media", IsWebService: true},
 	{ID: 9, Name: "navidrome.biswas.me", Subdomain: "navidrome", Port: "4533", DestinationIP: "localhost", Description: "Music Server", Status: "running", Icon: "🎵", Category: "Media", IsWebService: true},
+	{ID: 29, Name: "tidarr.biswas.me", Subdomain: "tidarr", Port: "8484", DestinationIP: "localhost", Description: "Tidal Downloader", Status: "running", Icon: "🎶", Category: "Media", IsWebService: true},
 	{ID: 10, Name: "ab.biswas.me", Subdomain: "ab", Port: "13378", DestinationIP: "localhost", Description: "Audiobookshelf", Status: "running", Icon: "📚", Category: "Media", IsWebService: true},
 	{ID: 11, Name: "photos.biswas.me", Subdomain: "photos", Port: "2283", DestinationIP: "localhost", Description: "Photo Management", Status: "running", Icon: "📸", Category: "Media", IsWebService: true},
 	{ID: 12, Name: "romm.biswas.me", Subdomain: "romm", Port: "8181", DestinationIP: "localhost", Description: "ROM Management", Status: "running", Icon: "🎮", Category: "Media", IsWebService: true},
@@ -95,6 +97,7 @@ var services = []Service{
 	{ID: 21, Name: "api.biswas.me", Subdomain: "api", Port: "5000", DestinationIP: "localhost", Description: "API Gateway", Status: "running", Icon: "🔌", Category: "Development", IsWebService: true},
 	{ID: 22, Name: "passwords.biswas.me", Subdomain: "passwords", Port: "13378", DestinationIP: "localhost", Description: "Password Service", Status: "running", Icon: "🔑", Category: "Security", IsWebService: true},
 	{ID: 23, Name: "rustdesk.biswas.me", Subdomain: "rustdesk", Port: "21116", DestinationIP: "localhost", Description: "Remote Desktop Protocol", Status: "running", Icon: "🖥️", Category: "Remote", IsWebService: false},
+	{ID: 24, Name: "viniplay.biswas.me", Subdomain: "viniplay", Port: "9348", Description: "IPTV Player", Status: "running", Icon: "📺", Category: "Media"},
 }
 
 const (
@@ -468,7 +471,7 @@ func createDNSRecord(subdomain string) error {
 
 	cnameTarget := os.Getenv("CNAME_TARGET")
 	if cnameTarget == "" {
-		cnameTarget = "anshuman.duckdns.com" // Default fallback
+		cnameTarget = "anshuman.duckdns.org" // Default fallback
 	}
 
 	if apiToken == "" || zoneID == "" {

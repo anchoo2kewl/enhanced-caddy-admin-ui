@@ -339,6 +339,9 @@
             <button class="btn" id="manageUsersBtn" onclick="openUsersModal()" style="display: none;">
                 👥 Manage Users
             </button>
+            <button class="admin-btn" onclick="showConfigModal()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                ⚙️ Settings
+            </button>
             <button class="btn" onclick="openChangePasswordModal()">
                 🔐 Change Password
             </button>
@@ -423,6 +426,41 @@
                     <input type="text" id="newAPIKeyValue" readonly style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; background: white;">
                     <button class="btn btn-sm" onclick="copyAPIKey()">📋 Copy</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Settings Modal -->
+    <div id="configModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Configuration Settings</h2>
+                <button class="modal-close" onclick="closeConfigModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">CNAME Target</label>
+                    <input type="text" id="cnameTarget" placeholder="e.g., anshuman.duckdns.org" 
+                           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 14px;">
+                    <small style="color: #718096; display: block; margin-top: 4px;">Default CNAME target for DNS records</small>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Cloudflare API Token</label>
+                    <input type="password" id="cloudflareToken" placeholder="Enter new token (leave empty to keep current)" 
+                           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 14px;">
+                    <small style="color: #718096; display: block; margin-top: 4px;" id="tokenStatus"></small>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Cloudflare Zone ID</label>
+                    <input type="text" id="cloudflareZone" placeholder="e.g., abc123..." 
+                           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 14px;">
+                </div>
+
+                <button onclick="saveConfig()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: 500; cursor: pointer;">
+                    💾 Save Configuration
+                </button>
             </div>
         </div>
     </div>
@@ -891,6 +929,69 @@
         }
 
         // API Key Management Functions
+
+        // Configuration Management Functions
+        function showConfigModal() {
+            document.getElementById('configModal').style.display = 'flex';
+            loadConfig();
+        }
+
+        function closeConfigModal() {
+            document.getElementById('configModal').style.display = 'none';
+        }
+
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                document.getElementById('cnameTarget').value = config.cname_target || '';
+                document.getElementById('cloudflareZone').value = config.cloudflare_zone_id || '';
+                
+                const tokenStatus = document.getElementById('tokenStatus');
+                if (config.cloudflare_token_set) {
+                    tokenStatus.textContent = 'Current token: ' + config.cloudflare_token + ' (leave empty to keep)';
+                    tokenStatus.style.color = '#48bb78';
+                } else {
+                    tokenStatus.textContent = 'No token configured';
+                    tokenStatus.style.color = '#f56565';
+                }
+            } catch (error) {
+                showToast('Error loading configuration: ' + error.message, 'error');
+            }
+        }
+
+        async function saveConfig() {
+            const config = {
+                cname_target: document.getElementById('cnameTarget').value,
+                cloudflare_zone_id: document.getElementById('cloudflareZone').value
+            };
+            
+            const token = document.getElementById('cloudflareToken').value;
+            if (token) {
+                config.cloudflare_token = token;
+            }
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showToast(result.message || 'Configuration saved successfully', 'success');
+                    closeConfigModal();
+                    document.getElementById('cloudflareToken').value = '';
+                } else {
+                    showToast('Error: ' + (result.message || 'Failed to save configuration'), 'error');
+                }
+            } catch (error) {
+                showToast('Error saving configuration: ' + error.message, 'error');
+            }
+        }
         async function openAPIKeysModal() {
             document.getElementById('apiKeysModal').style.display = 'block';
             document.getElementById('newAPIKeyDisplay').style.display = 'none';
