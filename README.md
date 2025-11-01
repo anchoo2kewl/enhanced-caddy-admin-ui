@@ -12,6 +12,7 @@ Caddy Admin UI is a self-hosted administration interface built with Go that simp
 - **Automatic Caddy Configuration** - Dynamically configures Caddy routes via the Admin API
 - **Cloudflare DNS Integration** - Automated DNS record creation and deletion
 - **User Management** - Multi-user support with role-based access control (admin/regular users)
+- **Configuration Management** - Built-in settings UI to manage Cloudflare credentials and DNS defaults
 - **Two-Factor Authentication (2FA)** - TOTP-based 2FA with QR code setup
 - **API Key Authentication** - Generate API keys for programmatic access
 - **Service Testing** - Built-in health checks for your services
